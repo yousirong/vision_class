@@ -9,7 +9,7 @@ class ImageProcessing():
     def __init__(self, img=None):
 
         self.sourceImg = img
-        self.targetImg = None
+        self.targetImg = 0
         self.nX = 0
         self.nY = 0
 
@@ -51,7 +51,8 @@ class ImageProcessing():
                             if (0 <= x_ < nX) and (0 <= y_ < nY):
                                 accumulator[y_, x_, r-min_rad] += 1
     
-        centers = np.argwhere(accumulator > np.max(accumulator) * 0.8)  # 최대 voting값의 80% 이상인 경우 원으로 판단
+        centers = np.argwhere(accumulator > np.max(accumulator) * 0.8)  
+        # 최대 voting값의 80% 이상인 경우 원으로 판단
         #조건을 만족하는 요소의 좌표 (y, x, r)를 리턴함
 
         circles = []  # 검출된 원을 저장할 리스트
@@ -101,7 +102,8 @@ class ImageProcessing():
         #k, l -> fy, fx
         halfSize = fnY//2
 
-        target_img = np.zeros_like(img, dtype='float32') #0으로 채워진 원본 소스와 동일한 크기의 2차원 배열을 만든다. #, dtype='int16'
+        target_img = np.zeros_like(img, dtype='float32') 
+        #0으로 채워진 원본 소스와 동일한 크기의 2차원 배열을 만든다. #, dtype='int16'
         #image 
         for j in range(halfSize, nY-halfSize): #Y
             for i in range(halfSize, nX-halfSize): #X
@@ -109,7 +111,8 @@ class ImageProcessing():
                 #filter
                 for k in range(-halfSize, halfSize+1): 
                     for l in range(-halfSize, halfSize+1):
-                        conv_value += (img[j+k][i+l] * filter[k+halfSize][l+halfSize]) ## 이 부분을 완성하면 컨볼루션 연산 완료
+                        conv_value += (img[j+k][i+l] * filter[k+halfSize][l+halfSize]) 
+                        ## 이 부분을 완성하면 컨볼루션 연산 완료
 
                 target_img[j][i] = conv_value
 
@@ -120,10 +123,3 @@ class ImageProcessing():
         img = np.abs(img)
         clipped = np.clip(img, 0, 255).astype('uint8')
         return clipped
-
-
-    def cvtTarget2PIL(self):
-        return Image.fromarray(self.targetImg)
-
-
-    
