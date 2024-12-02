@@ -8,7 +8,7 @@ from PIL import ImageTk
 from tkinter import messagebox
 import image_processing as ip
 from ImageConverter import ImageConverter
-
+import os
 #Graphic User Interface
 class MyTkinter():
 
@@ -33,36 +33,36 @@ class MyTkinter():
 
         
     def initialize(self):
-
         self.window.title("AI based Computer Vision Class")
+
+        # 데이터 저장 폴더 초기화
+        self.data_dir = "dataset"
+        os.makedirs(self.data_dir, exist_ok=True)
 
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
 
-        window_width = 500
-        window_height = 500
+        window_width = 600
+        window_height = 600
         x_pos = (screen_width - window_width) // 2
         y_pos = (screen_height - window_height) // 2
 
-        self.window.geometry(f"{window_width}x{window_height}+{x_pos}+{y_pos}") #"500x500+200+200" #500x500 프레임웍의 크기 @ 200, 200 위치
-        self.window.resizable(True, True) #사이즈를 조정 가능하도록 허용
+        self.window.geometry(f"{window_width}x{window_height}+{x_pos}+{y_pos}")
+        self.window.resizable(True, True)
 
         self.frameLeft = self.createFrame(self.window, "left")
         self.frameCenter = self.createFrame(self.window, "left")
         self.frameRight = self.createFrame(self.window, "left")
         self.frameRight2 = self.createFrame(self.window, "left")
-        
-        self.b1 = self.createButtonGrid(self.frameLeft, "image open", 0, 0)
-        self.b2 = self.createButtonGrid(self.frameLeft, "apply", 0, 1)
 
-        self.b3 = self.createButtonGrid(self.frameLeft, "thresholding", 1, 0)
-        self.b6 = self.createButtonGrid(self.frameLeft, "circle detection", 1, 1)
-
-        self.b4 = self.createButtonGrid(self.frameLeft, "web cam mode", 2, 0)
-        self.b5 = self.createButtonGrid(self.frameLeft, "close cam", 2, 1)   
-
-        self.b7 = self.createButtonGrid(self.frameLeft, "capture", 3, 0)
-        self.b8 = self.createButtonGrid(self.frameLeft, "new class", 3, 1)
+        self.b1 = self.createButtonGrid(self.frameLeft, "Image Open", 0, 0)
+        self.b2 = self.createButtonGrid(self.frameLeft, "Apply", 0, 1)
+        self.b3 = self.createButtonGrid(self.frameLeft, "Thresholding", 1, 0)
+        self.b6 = self.createButtonGrid(self.frameLeft, "Circle Detection", 1, 1)
+        self.b4 = self.createButtonGrid(self.frameLeft, "Webcam Mode", 2, 0)
+        self.b5 = self.createButtonGrid(self.frameLeft, "Close Cam", 2, 1)
+        self.b7 = self.createButtonGrid(self.frameLeft, "Capture", 3, 0)
+        self.b8 = self.createButtonGrid(self.frameLeft, "New Class", 3, 1)
 
         self.l1 = self.createLabel(self.frameCenter)
         self.l2 = self.createLabel(self.frameRight)
@@ -73,10 +73,8 @@ class MyTkinter():
         self.b4.config(command=self.getCam)
         self.b5.config(command=self.stopCam)
         self.b6.config(command=self.circleDetection)
-
         self.b7.config(command=self.capture)
         self.b8.config(command=self.newClass)
-
 
 
 
@@ -121,9 +119,14 @@ class MyTkinter():
 
 
     def newClass(self):
-        self.createRadio(self.frameLeft, "class " + str(self.classNum), self.classNum, 4 + self.classNum, 0)
+        class_name = f"class_{self.classNum}"
+        class_dir = os.path.join(self.data_dir, class_name)
+        os.makedirs(class_dir, exist_ok=True)  # 클래스별 폴더 생성
+
+        self.createRadio(self.frameLeft, class_name, self.classNum, 4 + self.classNum, 0)
         self.imgGroupList.append([])
-        self.classNum += 1 
+        self.classNum += 1
+        print(f"New class created: {class_name}")
 
     def showThumbImage(self, imgArr):
 
@@ -141,13 +144,23 @@ class MyTkinter():
 
 
     def capture(self):
+        if self.selectionRadio() >= len(self.imgGroupList):
+            messagebox.showinfo("Error", "No class selected!")
+            return
 
+        # 현재 선택된 클래스의 폴더 가져오기
+        class_name = f"class_{self.selectionRadio()}"
+        class_dir = os.path.join(self.data_dir, class_name)
+
+        # 이미지 저장
+        img_path = os.path.join(class_dir, f"image_{len(self.imgGroupList[self.selectionRadio()])}.jpg")
+        cv.imwrite(img_path, cv.cvtColor(self.img_target, cv.COLOR_RGB2BGR))
+
+        # 이미지 그룹에 추가
         self.imgGroupList[self.selectionRadio()].append(self.img_target)
-        for i in range(len(self.imgGroupList)):# print(len(self.imgGroupList))
-            print(i, len(self.imgGroupList[i]))
+        print(f"Image captured and saved to {img_path}")
 
         self.showThumbImage(self.imgGroupList[self.selectionRadio()])
-
 
 
     def getCam(self):
@@ -178,13 +191,14 @@ class MyTkinter():
 
 
     def stopCam(self):
-        if self.cam_update_id is not None:
+        if self.cam_update_id:
             self.window.after_cancel(self.cam_update_id)  # after 호출 취소
-            self.cam_update_id = None  # ID 초기화
+            self.cam_update_id = None
 
-        if self.cap is not None:
-            self.cap.release()
+        if hasattr(self, "cap") and self.cap:
+            self.cap.release()  # 카메라 객체 해제
             self.cap = None
+            print("Camera stopped.")
         
     def imgRead(self):
 
